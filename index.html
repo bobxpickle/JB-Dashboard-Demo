@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jillian OS">
+<title>Jillian OS</title>
+<style>
+:root{--bg:#0c0e13;--panel:#171a22;--panel2:#20242e;--line:#303642;--text:#f5f6f8;--muted:#9ba3b1;--accent:#8b5cf6;--danger:#fb7185;--good:#34d399;--warn:#fbbf24}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{min-height:100vh}.app{max-width:1100px;margin:auto;padding:18px 14px 90px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px}.brand h1{margin:0;font-size:30px}.muted{color:var(--muted)}
+button,input,textarea,select{font:inherit}button{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:11px;padding:9px 11px;cursor:pointer}button.primary{background:var(--accent);border-color:var(--accent)}
+button.danger{color:#fff;border-color:#61303b;background:#2a171d}
+nav{display:flex;gap:7px;overflow-x:auto;padding:15px 0 5px}nav button{white-space:nowrap}nav button.active{background:var(--accent);border-color:var(--accent)}
+.view{display:none}.view.active{display:block}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.wide{grid-column:1/-1}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:17px;padding:16px}.card h2{margin:0 0 11px;font-size:19px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.stat{background:var(--panel2);border-radius:13px;padding:12px}.stat b{font-size:22px;display:block}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.row:last-child{border-bottom:0}
+.badge{font-size:11px;font-weight:700;padding:5px 8px;border-radius:99px;background:#342c16;color:var(--warn)}.green{background:#12352b;color:#6ee7b7}.blue{background:#182b42;color:#93c5fd}.pink{background:#3b1e2a;color:#f9a8d4}
+input,textarea,select{width:100%;background:#0f1218;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;margin:4px 0 9px}textarea{min-height:90px;resize:vertical}label{font-size:12px;color:var(--muted)}
+.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:13px}
+.progress{height:8px;background:#2b3039;border-radius:99px;overflow:hidden}.progress span{height:100%;display:block;background:var(--accent)}
+.projectgrid,.mediagrid,.appgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.project,.appcard{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:13px}
+.media{position:relative}.media img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:11px;display:block}.media button{position:absolute;right:6px;top:6px;padding:5px 8px;background:#111c}
+.cover{height:145px;border-radius:14px;background-size:cover;background-position:center;display:flex;align-items:flex-end;padding:14px;margin-bottom:13px;position:relative;overflow:hidden}.cover:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent,#000b)}.cover>*{position:relative;z-index:1}
+.modal{position:fixed;inset:0;background:#000b;display:none;align-items:flex-end;justify-content:center;z-index:50}.modal.open{display:flex}.sheet{width:min(900px,100%);max-height:94vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px 20px 0 0;padding:17px}.sheethead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tabs{display:flex;gap:7px;overflow:auto;margin:12px 0}.tabs button{white-space:nowrap}.pane{display:none}.pane.active{display:block}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#252a34;border:1px solid var(--line);padding:10px 14px;border-radius:99px;display:none;z-index:100}
+.search{margin-top:13px}.search input{margin:0}.small{font-size:12px}.section-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;border:1px solid var(--line);border-radius:11px;margin:7px 0;background:var(--panel2)}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.projectgrid,.mediagrid,.appgrid{grid-template-columns:repeat(2,1fr)}.app{padding-left:11px;padding-right:11px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><h1 id="dashboardTitle"></h1><div class="muted" id="dateLine"></div></div>
+  <div class="actions"><button type="button" onclick="openDiscover()">✨</button><button type="button" onclick="quickAdd()">＋</button><button type="button" onclick="openView('settings')">⚙️</button></div>
+</header>
+<div class="search"><input id="globalSearch" placeholder="🔎 Search your dashboard..." oninput="globalSearch(this.value)"></div>
+<nav id="nav"></nav>
+
+<section id="home" class="view active">
+  <div class="stats">
+    <div class="stat"><b id="statTasks">0</b>Open tasks</div>
+    <div class="stat"><b id="statWaiting">0</b>Waiting on</div>
+    <div class="stat"><b id="statProjects">0</b>Creative projects</div>
+    <div class="stat"><b id="statMoney">$0</b>After bills</div>
+  </div>
+  <div class="grid" style="margin-top:13px">
+    <div class="card wide"><h2>🔔 Today / Needs Attention</h2><div id="attention"></div></div>
+    <div class="card"><h2>📌 Quick Capture</h2><textarea id="quickText" placeholder="Idea, reminder, thought..."></textarea><div class="actions"><button type="button" class="primary" onclick="saveQuick()">Save to Brain Dump</button><button type="button" onclick="quickAdd()">＋ Structured item</button></div></div>
+    <div class="card"><h2>📊 Snapshot</h2><div id="snapshot"></div></div>
+    <div class="card wide"><h2>📱 My Apps</h2><div id="appsHome" class="appgrid"></div></div>
+  </div>
+</section>
+
+<section id="career" class="view"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>💼 Career Tracker</h2><button type="button" class="primary" onclick="addCareer()">＋ Add Job</button></div><div id="careerList"></div></div></section>
+
+<section id="creative" class="view"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>🎨 Creative Studio</h2><button type="button" class="primary" onclick="addProject()">＋ New Project</button></div><p class="muted">Projects can have their own cover, references, thumbnails, ideas, process and final gallery.</p><div id="projectList" class="projectgrid"></div></div>
+<div class="card" style="margin-top:13px"><h2>🖼️ Inspiration Vault</h2><input type="file" accept="image/*" multiple onchange="addVault(event)"><div id="vaultGrid" class="mediagrid" style="margin-top:10px"></div></div></section>
+
+<section id="money" class="view"><div class="grid"><div class="card"><h2>💰 Money</h2><label>Hourly rate<input id="moneyRate" type="number" value="17" oninput="renderMoney()"></label><label>Hours/week<input id="moneyHours" type="number" value="32" oninput="renderMoney()"></label><label>Monthly bills<input id="moneyBills" type="number" value="600" oninput="renderMoney()"></label></div><div class="card"><h2>Results</h2><div id="moneyResults"></div></div><div class="card wide"><h2>⚖️ What-if Job Comparison</h2><div class="grid"><div><label>Job 1 name<input id="job1Name" type="text" value="Job 1"></label><label>Job 1 hourly rate<input id="vetRate" type="number" value="17"></label><label>Job 1 hours/week<input id="vetHours" type="number" value="32"></label></div><div><label>Job 2 name<input id="job2Name" type="text" value="Job 2"></label><label>Job 2 hourly rate<input id="homesRate" type="number" value="17"></label><label>Job 2 hours/week<input id="homesHours" type="number" value="32"></label></div></div><button type="button" class="primary" onclick="compareJobs()">Compare</button><div id="compareResults"></div></div></div></section>
+
+<section id="notes" class="view"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>📝 Notes</h2><button type="button" class="primary" onclick="addNote()">＋ New Note</button></div><div id="notesList"></div></div></section>
+<section id="tasks" class="view"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>✅ Tasks</h2><button type="button" class="primary" onclick="addTask()">＋ Add Task</button></div><div id="taskList"></div></div></section>
+<section id="calendar" class="view"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>📅 Dates & Deadlines</h2><button type="button" class="primary" onclick="addEvent()">＋ Add Date</button></div><div id="eventList"></div></div></section>
+<section id="brain" class="view"><div class="card"><h2>🧠 Brain Dump</h2><textarea id="brainText" placeholder="Dump anything here..."></textarea><button type="button" class="primary" onclick="addBrain()">Save thought</button><div id="brainList"></div></div></section>
+<section id="bookmarks" class="view"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>🔖 Bookmarks</h2><button type="button" class="primary" onclick="addBookmark()">＋ Add Bookmark</button></div><div id="bookmarkList"></div></div></section>
+<section id="study" class="view"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>📚 Study</h2><button type="button" class="primary" onclick="addStudySet()">＋ Study Set</button></div><p class="muted">Create your own flashcards and study sets directly in the app.</p><div id="studyList"></div></div></section>
+<section id="music" class="view"><div class="card"><h2>🎵 Music</h2><button type="button" onclick="openMusicEditor()">✨ Customize Music Player</button><p class="muted">Your local music library. <b>MP3 files are supported here.</b> Use the controls below for normal play, shuffle, repeat-all, or repeat-one.</p><input id="musicImport" type="file" accept=".mp3,audio/mpeg" multiple onchange="addMusic(event)"><div id="musicPlayerCard"></div><div id="musicList"></div></div></section>
+<section id="files" class="view"><div class="card"><h2>📦 Media & Files</h2><p class="muted">A local library for images, audio and video. Large cloud-backed storage can be connected later.</p><input type="file" multiple onchange="addFiles(event)"><div id="fileList"></div></div></section>
+<section id="discover" class="view">
+<div class="card">
+  <h2>✨ Discover</h2>
+  <p class="muted">A playground of things Jillian OS can do. Try anything — you can customize almost all of it.</p>
+  <div class="appgrid" id="discoverGrid"></div>
+</div>
+</section>
+<section id="settings" class="view"><div class="grid"><div class="card wide"><h2>⚙️ Customize Jillian OS</h2><p class="muted">Make the dashboard itself yours too.</p><div class="actions"><button type="button" class="primary" onclick="customizeDashboardTitle()">✏️ Change Dashboard Title</button></div><div id="sectionSettings"></div><div class="actions"><button type="button" class="primary" onclick="createSection()">＋ Create Section/App</button></div></div><div class="card"><h2>💾 Backup</h2><button type="button" onclick="exportData()">Export Backup</button><button type="button" onclick="document.getElementById('importData').click()">Import Backup</button><input id="importData" type="file" accept=".json" style="display:none" onchange="importBackup(event)"></div><div class="card"><h2>🎨 Appearance</h2><button type="button" onclick="customizeAppearance()">Customize Appearance</button><p class="muted small">Choose your own cover/background image for sections and projects.</p></div></div></section>
+</div>
+
+<div id="modal" class="modal"><div class="sheet"><div class="sheethead"><h2 id="modalTitle"></h2><button type="button" onclick="closeModal()">✕</button></div><div id="modalBody"></div></div></div>
+<div id="toast" class="toast"></div>
+
+<script>
+const KEY='JILLIAN_OS_V3';
+const defaultSections=[
+{id:'home',icon:'🏠',name:'Home',visible:true},
+{id:'career',icon:'💼',name:'Career',visible:true},
+{id:'creative',icon:'🎨',name:'Creative',visible:true},
+{id:'money',icon:'💰',name:'Money',visible:true},
+{id:'notes',icon:'📝',name:'Notes',visible:true},
+{id:'tasks',icon:'✅',name:'Tasks',visible:true},
+{id:'calendar',icon:'📅',name:'Calendar',visible:true},
+{id:'brain',icon:'🧠',name:'Brain Dump',visible:true},
+{id:'bookmarks',icon:'🔖',name:'Bookmarks',visible:true},
+{id:'study',icon:'📚',name:'Study',visible:true},
+{id:'music',icon:'🎵',name:'Music',visible:true},
+{id:'files',icon:'📦',name:'Files',visible:true}
+];
+let db=JSON.parse(localStorage.getItem(KEY)||sessionStorage.getItem(KEY+'_fallback')||'null')||{
+sections:defaultSections, career:[
+{name:'Vet Clinic',status:'Considering',pay:'$16–17/hr',schedule:'No rotating weekends; possible Saturday fill-in. Exact hours not confirmed.',notes:'Potential growth and benefits; salary discussion after 3–4 months was mentioned.'},
+{name:'Holdrege Homes — Dietary Aide',status:'Offer',pay:'$17/hr',schedule:'32 hrs/week; Saturday + Sunday every other weekend.',notes:'Good starting pay, benefits, advancement. Vicki is willing to wait.'},
+{name:'Nebraska Prairie Museum — Media Director',status:'Waiting',pay:'TBD',schedule:'TBD',notes:'Resume/portfolio submitted; decision pending.'},
+{name:'Visit Nebraska / Visit 37',status:'Pending',pay:'Commission',schedule:'Project-based',notes:'Selection notification expected September 8.'}
+],projects:[{name:'Raven Perspective Study',cover:'',stage:'Sketch',progress:35,goal:'Foreshortened raven flying toward viewer.',ideas:['Closest talon massively enlarged','Asymmetrical wings','Simple style'],refs:[],thumbs:[],finals:[],notes:''}],
+tasks:[],notes:[],events:[],brain:[],bookmarks:[],docs:[],vault:[],studySets:[],music:[],files:[],appearance:{accent:'#8b5cf6',background:''}
+};
+function $(id){return document.getElementById(id)}
+
+function normalizeDB(){
+  if(!db || typeof db!=='object') db={};
+  if(!Array.isArray(db.sections)) db.sections=defaultSections.slice();
+  db.sections=db.sections.filter(function(s){return s.id!=='documents' && s.name!=='Documents'});
+  if(!Array.isArray(db.career)) db.career=[];
+  if(!Array.isArray(db.projects)) db.projects=[];
+  if(!Array.isArray(db.tasks)) db.tasks=[];
+  if(!Array.isArray(db.notes)) db.notes=[];
+  if(!Array.isArray(db.events)) db.events=[];
+  if(!Array.isArray(db.brain)) db.brain=[];
+  if(!Array.isArray(db.bookmarks)) db.bookmarks=[];
+  if(!Array.isArray(db.docs)) db.docs=[];
+  if(!Array.isArray(db.vault)) db.vault=[];
+  if(!Array.isArray(db.studySets)) db.studySets=[];
+  if(!Array.isArray(db.music)) db.music=[];
+  if(!db.musicSettings || typeof db.musicSettings!=='object') db.musicSettings={current:0,shuffle:false,repeat:'off'};
+  db.musicSettings.current=Number.isFinite(+db.musicSettings.current)?Math.max(0,+db.musicSettings.current):0;
+  db.musicSettings.shuffle=!!db.musicSettings.shuffle;
+  db.musicSettings.repeat=['off','all','one'].includes(db.musicSettings.repeat)?db.musicSettings.repeat:'off';
+  if(!Array.isArray(db.files)) db.files=[];
+  if(!db.appearance || typeof db.appearance!=='object') db.appearance={accent:'#8b5cf6',background:'',title:'Jillian OS'};
+  db.appearance.title=db.appearance.title||'';
+  db.appearance.accent=db.appearance.accent||'#8b5cf6';
+  db.projects.forEach(function(p){
+    p.name=p.name||'Untitled Project'; p.stage=p.stage||'Idea'; p.progress=Number(p.progress)||0;
+    p.goal=p.goal||''; p.cover=p.cover||''; p.notes=p.notes||'';
+    p.ideas=Array.isArray(p.ideas)?p.ideas:[]; p.refs=Array.isArray(p.refs)?p.refs:[];
+    p.thumbs=Array.isArray(p.thumbs)?p.thumbs:[]; p.finals=Array.isArray(p.finals)?p.finals:[];
+  });
+  db.studySets.forEach(function(s){s.name=s.name||'Study Set';s.cards=Array.isArray(s.cards)?s.cards:[]});
+  db.music.forEach(function(m){
+    m.name=m.name||'Audio';m.title=m.title||m.name;m.artist=m.artist||'';m.album=m.album||'';
+    m.genre=m.genre||'';m.track=m.track||'';m.description=m.description||'';m.cover=m.cover||'';
+    m.player=m.player||{bg:'#10131a',accent:'#8b5cf6',size:'Large',blur:true,lyrics:false,visualizer:false,text:''};
+    m.mime=m.mime||'audio/mpeg';
+  });
+  save();
+}
+normalizeDB();
+
+function save(){
+  try{
+    var payload=JSON.stringify(db);
+    try{
+      localStorage.setItem(KEY,payload);
+      sessionStorage.removeItem(KEY+'_fallback');
+      return true;
+    }catch(e){
+      console.warn('localStorage save failed; using session fallback',e);
+      try{sessionStorage.setItem(KEY+'_fallback',payload);return true}catch(e2){
+        console.error('storage unavailable',e2);return false;
+      }
+    }
+  }catch(e){
+    console.error('Could not serialize Jillian OS data',e);
+    return false;
+  }
+}
+function esc(x){return String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function toast(s){$('toast').textContent=s;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',1700)}
+function renderNav(){let n=$('nav');n.innerHTML='';db.sections.filter(s=>s.visible&&s.id!=='documents'&&s.name!=='Documents').forEach(s=>{let b=document.createElement('button');b.textContent=s.icon+' '+s.name;b.onclick=()=>openView(s.id,b);n.appendChild(b)});let b=document.createElement('button');b.textContent='⚙️ Settings';b.onclick=()=>openView('settings',b);n.appendChild(b)}
+function openView(id,btn){try{document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});let v=$(id);if(!v){createCustomDom(id);v=$(id)};if(!v){toast('Section could not open');return}v.classList.add('active');document.querySelectorAll('nav button').forEach(function(x){x.classList.remove('active')});if(btn)btn.classList.add('active');renderAll()}catch(e){toast('Could not open that section');console.error(e)}}
+function createCustomDom(id){let s=db.sections.find(x=>x.id===id);if(!s)return;let old=document.getElementById(id);if(old)old.remove();let v=document.createElement('section');v.id=id;v.className='view';v.innerHTML=`<div class="card"><div class="cover" style="${s.cover?'background-image:url('+s.cover+')':''}"><div><h2>${esc(s.icon)} ${esc(s.name)}</h2></div></div><p class="muted">Custom section — build it however you want.</p><div id="${id}_content"></div><div class="actions"><button type="button" class="primary" onclick="customizeSection('${id}')">⚙️ Customize</button><button type="button" onclick="addCustomBlock('${id}')">＋ Add Block</button></div></div>`;document.querySelector('.app').appendChild(v);renderCustom(id)}
+
+function openDiscover(){openView('discover');renderDiscover()}
+function discoverAction(action){
+  try{
+    if(action==='customize')return customizeAppearance();
+    if(action==='customapp')return createSection();
+    if(action==='flashcards')return addStudySet();
+    if(action==='music')return openMusicEditor();
+    if(action==='photos')return toast('Open a project or custom section → Customize to add cover/reference images');
+    if(action==='files')return openView('files');
+    if(action==='search'){let s=$('globalSearch');if(s){s.focus();s.scrollIntoView({behavior:'smooth',block:'center'});}return}
+    if(action==='backup')return exportData();
+    if(action==='settings')return openView('settings');
+    if(action==='quick')return quickAdd();
+    if(action==='playground')return toast('Feature Playground is ready for new tools');
+  }catch(e){console.error(e);toast('That feature could not open')}
+}
+function renderDiscover(){
+  const items=[
+    ['🎨','Customize Anything','Change names, icons, covers, backgrounds, colors, layouts and visibility.','customize'],
+    ['🧱','Build a Custom App','Create a blank section and add your own blocks.','customapp'],
+    ['🃏','Flashcard Lab','Make study cards and use text-to-speech on the front of a card.','flashcards'],
+    ['🎵','Music Lab','Import your own MP3s, edit metadata and design the Now Playing screen.','music'],
+    ['🖼️','Photo Covers','Use your own photos as covers for projects and custom sections.','photos'],
+    ['📦','File Playground','Import local files and open/download them from the app.','files'],
+    ['🔎','Global Search','Search career items, projects, notes, tasks, study, music and files.','search'],
+    ['💾','Backup & Restore','Export your entire local dashboard and import it later.','backup'],
+    ['🧩','Rearrange Apps','Move sections up/down from Settings.','settings'],
+    ['👁️','Hide Apps','Hide anything you do not want on the navigation bar.','settings'],
+    ['🎯','Quick Capture','Dump an idea without deciding where it belongs yet.','quick'],
+    ['🧪','Feature Playground','This page is intentionally expandable — new tools can be added here later.','playground']
+  ];
+  $('discoverGrid').innerHTML=items.map(x=>`<div class="appcard"><div style="font-size:28px">${x[0]}</div><h3>${esc(x[1])}</h3><p class="muted">${esc(x[2])}</p><button type="button" data-discover-action="${x[3]}">Try it</button></div>`).join('');
+}
+function openMusicEditor(){
+  if(!db.music.length){toast('Import a local MP3 first');openView('music');return}
+  var i=currentMusicIndex();
+  musicEditor(i<0?0:i);
+  setTimeout(function(){musicPane('player')},50);
+}
+function musicEditor(i){
+  let m=db.music[i]; if(!m)return;
+  $('modal').style.display='';
+  $('modalTitle').textContent='🎵 Customize Song & Player';
+  $('modalBody').innerHTML=`
+  <div class="cover" style="${m.cover?'background-image:url('+m.cover+')':''}">
+    <div><h2>${esc(m.title||m.name)}</h2><div>${esc(m.artist||'Unknown artist')}</div></div>
+  </div>
+  <div class="tabs">
+    <button type="button" onclick="musicPane('song')">Song</button>
+    <button type="button" onclick="musicPane('player')">Now Playing</button>
+  </div>
+  <div id="m-song" class="pane active">
+    <label>Song title<input id="mTitle" value="${esc(m.title||m.name)}"></label>
+    <label>Artist<input id="mArtist" value="${esc(m.artist||'')}"></label>
+    <label>Album<input id="mAlbum" value="${esc(m.album||'')}"></label>
+    <label>Genre<input id="mGenre" value="${esc(m.genre||'')}"></label>
+    <label>Track number<input id="mTrack" type="number" value="${esc(m.track||'')}"></label>
+    <label>Description / notes<textarea id="mDesc">${esc(m.description||'')}</textarea></label>
+    <button type="button" onclick="document.getElementById('mCover').click()">🖼️ Choose Cover Photo</button>
+    <input id="mCover" type="file" accept="image/*" style="display:none" onchange="setMusicCover(event,${i})">
+    <div class="actions"><button type="button" class="primary" onclick="saveMusicMeta(${i})">Save Song</button></div>
+  </div>
+  <div id="m-player" class="pane">
+    <label>Player background<input id="mBg" type="color" value="${esc(m.player?.bg||'#10131a')}"></label>
+    <label>Accent<input id="mAccent" type="color" value="${esc(m.player?.accent||'#8b5cf6')}"></label>
+    <label>Cover size<select id="mSize"><option>Compact</option><option>Medium</option><option>Large</option><option>Full</option></select></label>
+    <label><input id="mBlur" type="checkbox" ${m.player?.blur!==false?'checked':''}> Blurred artwork background</label>
+    <label><input id="mLyrics" type="checkbox" ${m.player?.lyrics?'checked':''}> Show lyrics area</label>
+    <label><input id="mViz" type="checkbox" ${m.player?.visualizer?'checked':''}> Show visualizer</label>
+    <label>Custom player text<input id="mPlayerText" value="${esc(m.player?.text||'')}"></label>
+    <div class="actions"><button type="button" class="primary" onclick="saveMusicPlayer(${i})">Save Player Design</button></div>
+  </div>`;
+  if(m.player?.size)$('mSize').value=m.player.size;
+  $('modal').classList.add('open');
+}
+function musicPane(id){
+  document.querySelectorAll('#modalBody .pane').forEach(x=>x.classList.remove('active'));
+  let pane=$('m-'+id); if(pane)pane.classList.add('active');
+}
+function setMusicCover(e,i){
+  let f=e.target.files[0];if(!f)return;
+  let r=new FileReader();
+  r.onload=()=>{db.music[i].cover=r.result;save();musicEditor(i);musicPane('song');};
+  r.readAsDataURL(f);
+}
+function saveMusicMeta(i){
+  let m=db.music[i]; if(!m)return;
+  m.title=$('mTitle')?.value||m.name;
+  m.artist=$('mArtist')?.value||'';
+  m.album=$('mAlbum')?.value||'';
+  m.genre=$('mGenre')?.value||'';
+  m.track=$('mTrack')?.value||'';
+  m.description=$('mDesc')?.value||'';
+  if(save()){closeModal();renderMusic();toast('Song updated');}
+}
+function saveMusicPlayer(i){
+  let m=db.music[i]; if(!m)return;
+  m.player={
+    bg:$('mBg')?.value||'#10131a',
+    accent:$('mAccent')?.value||'#8b5cf6',
+    size:$('mSize')?.value||'Large',
+    blur:!!$('mBlur')?.checked,
+    lyrics:!!$('mLyrics')?.checked,
+    visualizer:!!$('mViz')?.checked,
+    text:$('mPlayerText')?.value||''
+  };
+  if(save()){closeModal();renderMusic();toast('Player design saved');}
+}
+
+function customizeDashboardTitle(){
+  formModal('Customize Dashboard Title',[['Title','text',db.appearance.title||'']],function(v){
+    db.appearance.title=v[0]||'';
+    if(save()){renderAll();closeModal();toast('Dashboard title updated');}
+  });
+}
+function updateDashboardHeader(){
+  let t=$('dashboardTitle'),d=$('dateLine');
+  if(t)t.textContent=db.appearance.title||'';
+  if(d)d.textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+}
+function renderAll(){try{updateDashboardHeader();renderDiscover();renderHome();renderCareer();renderProjects();renderVault();renderMoney();renderNotes();renderTasks();renderEvents();renderBrain();renderBookmarks();renderStudy();renderMusic();renderFiles();renderSettings();applyAppearance()}catch(e){console.error(e);toast('A panel could not refresh')}}
+function renderHome(){
+  let open=db.tasks.filter(x=>!x.done).length;
+  $('statTasks').textContent=open;
+  $('statWaiting').textContent=db.career.filter(x=>['Waiting','Pending','Considering'].includes(x.status)).length;
+  $('statProjects').textContent=db.projects.length;
+  let m=moneyNumbers();$('statMoney').textContent='$'+Math.round(m.after);
+
+  let candidates=[];
+  db.tasks.filter(x=>!x.done).forEach(x=>candidates.push({icon:'☐',text:x.name}));
+  let pending=db.career.filter(x=>['Waiting','Pending','Considering'].includes(x.status));
+  if(pending.length){
+    let day=Math.floor(Date.now()/86400000);
+    let x=pending[day%pending.length];
+    candidates.push({icon:'⏳',text:x.name});
+  }
+  let attention=candidates.slice(0,4);
+  $('attention').innerHTML=attention.length
+    ? attention.map(x=>`<div class="row">${x.icon} ${esc(x.text)}</div>`).join('')
+    : '<div class="empty">Nothing urgent right now 🎉</div>';
+
+  $('snapshot').innerHTML=`<div class="row">Career opportunities <b>${db.career.length}</b></div><div class="row">Creative projects <b>${db.projects.length}</b></div><div class="row">Study sets <b>${db.studySets.length}</b></div><div class="row">Brain Dump <b>${db.brain.length}</b></div>`;
+  $('appsHome').innerHTML=db.sections.filter(s=>s.visible&&s.id!=='home').map(s=>`<div class="appcard"><div style="font-size:26px">${esc(s.icon)}</div><b>${esc(s.name)}</b><div class="actions"><button type="button" onclick="openView('${s.id}')">Open</button></div></div>`).join('');
+}
+function renderCareer(){$('careerList').innerHTML=db.career.map((x,i)=>`<div class="card" style="margin-top:10px"><div class="row"><b>${esc(x.name)}</b><span class="badge ${x.status==='Offer'?'green':x.status==='Waiting'?'blue':''}">${esc(x.status)}</span></div><p><b>Pay:</b> ${esc(x.pay)}</p><p><b>Schedule:</b> ${esc(x.schedule)}</p><p>${esc(x.notes)}</p><div class="actions"><button type="button" onclick="editCareer(${i})">✏️ Edit</button><button type="button" onclick="deleteCareer(${i})">🗑️ Delete</button></div></div>`).join('')||'<div class="empty">No career items.</div>'}
+function addCareer(){formModal('Add Career',[['Name','text'],['Status','text'],['Pay','text'],['Schedule','textarea'],['Notes','textarea']],v=>{db.career.push({name:v[0],status:v[1],pay:v[2],schedule:v[3],notes:v[4]});save();closeModal();renderAll()})}
+function editCareer(i){let x=db.career[i];formModal('Edit Career',[['Name','text',x.name],['Status','text',x.status],['Pay','text',x.pay],['Schedule','textarea',x.schedule],['Notes','textarea',x.notes]],v=>{Object.assign(x,{name:v[0],status:v[1],pay:v[2],schedule:v[3],notes:v[4]});save();closeModal();renderAll()})}
+function deleteCareer(i){if(confirm('Delete this career item?')){db.career.splice(i,1);save();renderAll()}}
+function renderProjects(){$('projectList').innerHTML=db.projects.map((x,i)=>`<div class="project">${x.cover?`<div class="cover" style="background-image:url('${x.cover}')"><h3>${esc(x.name)}</h3></div>`:`<h3>${esc(x.name)}</h3>`}<span class="badge">${esc(x.stage)}</span><p class="muted">${esc(x.goal)}</p><div class="progress"><span style="width:${x.progress}%"></span></div><small>${x.progress}% complete</small><div class="actions"><button type="button" class="primary" onclick="openProject(${i})">Open Studio</button><button type="button" onclick="deleteProject(${i})">🗑️</button></div></div>`).join('')||'<div class="empty">No projects.</div>'}
+function addProject(){formModal('New Creative Project',[['Project name','text'],['Stage','text','Idea'],['Progress %','number','0'],['Goal','textarea']],v=>{db.projects.push({name:v[0],stage:v[1],progress:+v[2]||0,goal:v[3],cover:'',ideas:[],refs:[],thumbs:[],finals:[],notes:''});save();closeModal();renderAll()})}
+function deleteProject(i){if(confirm('Delete this creative project?')){db.projects.splice(i,1);save();renderAll()}}
+function openProject(i){
+  $('modal').style.display='';let x=db.projects[i];$('modal').style.display='';$('modalTitle').textContent='🎨 '+x.name;$('modalBody').innerHTML=`<div class="cover" style="${x.cover?'background-image:url('+x.cover+')':''}"><div><h2>${esc(x.name)}</h2></div></div><div class="tabs"><button type="button" onclick="projectPane('overview')">Overview</button><button type="button" onclick="projectPane('refs')">References</button><button type="button" onclick="projectPane('thumbs')">Thumbnails</button><button type="button" onclick="projectPane('ideas')">Ideas</button><button type="button" onclick="projectPane('finals')">Final</button><button type="button" onclick="projectPane('customize')">⚙️ Customize</button></div>
+<div id="p-overview" class="pane active"><label>Stage<select id="pStage"><option>Idea</option><option>Planning</option><option>Sketch</option><option>Working</option><option>Finished</option></select></label><label>Progress %<input id="pProgress" type="number" min="0" max="100" value="${x.progress}"></label><label>Goal<textarea id="pGoal">${esc(x.goal)}</textarea></label><label>Process notes<textarea id="pNotes">${esc(x.notes)}</textarea></label><button type="button" class="primary" onclick="saveProject(${i})">Save</button></div>
+<div id="p-refs" class="pane"><p class="muted">Upload reference images from your iPhone.</p><input type="file" accept="image/*" multiple onchange="projectImages(event,${i},'refs')"><div class="mediagrid">${mediaHtml(x.refs,i,'refs')}</div></div>
+<div id="p-thumbs" class="pane"><p class="muted">Upload thumbnail ideas and mark favorites in your notes.</p><input type="file" accept="image/*" multiple onchange="projectImages(event,${i},'thumbs')"><div class="mediagrid">${mediaHtml(x.thumbs,i,'thumbs')}</div></div>
+<div id="p-ideas" class="pane"><textarea id="newIdea" placeholder="New idea..."></textarea><button type="button" class="primary" onclick="addIdea(${i})">＋ Add idea</button>${x.ideas.map((z,j)=>`<div class="row">💡 ${esc(z)}<button type="button" onclick="deleteIdea(${i},${j})">✕</button></div>`).join('')}</div>
+<div id="p-finals" class="pane"><input type="file" accept="image/*,video/*" multiple onchange="projectFiles(event,${i})"><div class="mediagrid">${mediaHtml(x.finals,i,'finals')}</div></div>
+<div id="p-customize" class="pane"><button type="button" onclick="chooseCover(${i})">🖼️ Change Cover Photo</button><input id="projectCover" type="file" accept="image/*" style="display:none" onchange="setProjectCover(event,${i})"><p class="muted">Choose your own photo as the project's cover.</p></div>`;$('pStage').value=x.stage;$('modal').classList.add('open')}
+function projectPane(id){document.querySelectorAll('.pane').forEach(x=>x.classList.remove('active'));$('p-'+id).classList.add('active')}
+function saveProject(i){let x=db.projects[i];x.stage=$('pStage').value;x.progress=Math.max(0,Math.min(100,+$('pProgress').value||0));x.goal=$('pGoal').value;x.notes=$('pNotes').value;save();closeModal();renderAll();toast('Project saved')}
+function mediaHtml(arr,i,type){return arr.map((m,j)=>`<div class="media"><img src="${m.data||m}" alt=""><button type="button" onclick="deleteMedia(${i},'${type}',${j})">✕</button></div>`).join('')}
+
+function compressProjectImage(file,maxSide,quality){
+  return new Promise(function(resolve,reject){
+    var reader=new FileReader();
+    reader.onerror=reject;
+    reader.onload=function(){
+      var img=new Image();
+      img.onerror=reject;
+      img.onload=function(){
+        var scale=Math.min(1,maxSide/Math.max(img.naturalWidth||img.width,img.naturalHeight||img.height));
+        var w=Math.max(1,Math.round((img.naturalWidth||img.width)*scale));
+        var h=Math.max(1,Math.round((img.naturalHeight||img.height)*scale));
+        var c=document.createElement('canvas');
+        c.width=w;c.height=h;
+        var ctx=c.getContext('2d');
+        ctx.drawImage(img,0,0,w,h);
+        resolve({data:c.toDataURL('image/jpeg',quality),name:file.name});
+      };
+      img.src=reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function projectImages(e,i,type){
+  try{
+    var files=Array.from(e.target.files||[]);
+    if(!files.length)return;
+    var project=db.projects[i];
+    if(!project[type])project[type]=[];
+    var added=[];
+    for(var n=0;n<files.length;n++){
+      var item=await compressProjectImage(files[n],1400,0.76);
+      project[type].push(item);
+      added.push(item);
+    }
+    var ok=save();
+    openProject(i);
+    if(ok)toast(added.length+' reference'+(added.length===1?'':'s')+' added');
+    else toast('Added, but browser storage is full');
+    e.target.value='';
+  }catch(err){
+    console.error('project image import:',err);
+    toast('Could not add those images');
+  }
+}
+function projectFiles(e,i){projectImages(e,i,'finals')}
+function deleteMedia(i,type,j){db.projects[i][type].splice(j,1);save();openProject(i)}
+function addIdea(i){let v=$('newIdea').value.trim();if(v){db.projects[i].ideas.push(v);save();openProject(i)}}
+function deleteIdea(i,j){db.projects[i].ideas.splice(j,1);save();openProject(i)}
+function chooseCover(i){$('projectCover').click()}function setProjectCover(e,i){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{db.projects[i].cover=r.result;save();openProject(i);renderProjects()};r.readAsDataURL(f)}
+function addVault(e){[...e.target.files].forEach(f=>{let r=new FileReader();r.onload=()=>{db.vault.push({data:r.result,name:f.name});save();renderVault()};r.readAsDataURL(f)})}
+function renderVault(){$('vaultGrid').innerHTML=db.vault.map((m,i)=>`<div class="media"><img src="${m.data}"><button type="button" onclick="db.vault.splice(${i},1);save();renderVault()">✕</button></div>`).join('')}
+function moneyNumbers(){let r=+$('moneyRate').value||0,h=+$('moneyHours').value||0,b=+$('moneyBills').value||0,m=r*h*4.333;return{weekly:r*h,monthly:m,annual:r*h*52,after:m-b}}
+function renderMoney(){let x=moneyNumbers();$('moneyResults').innerHTML=`<div class="row">Weekly gross <b>$${x.weekly.toFixed(0)}</b></div><div class="row">Monthly gross <b>$${x.monthly.toFixed(0)}</b></div><div class="row">Annual gross <b>$${x.annual.toFixed(0)}</b></div><div class="row">After bills <b>$${x.after.toFixed(0)}</b></div>`}
+function compareJobs(){
+  let n1=$('job1Name')?.value.trim()||'Job 1';
+  let n2=$('job2Name')?.value.trim()||'Job 2';
+  let a=(+$('vetRate').value||0)*(+$('vetHours').value||0)*4.333;
+  let b=(+$('homesRate').value||0)*(+$('homesHours').value||0)*4.333;
+  $('compareResults').innerHTML=`<div class="row">${esc(n1)} monthly <b>$${a.toFixed(0)}</b></div><div class="row">${esc(n2)} monthly <b>$${b.toFixed(0)}</b></div><div class="row">Difference <b>$${Math.abs(a-b).toFixed(0)}/month</b></div>`;
+}
+function addNote(){db.notes.unshift({title:'New Note',body:''});save();renderNotes()}
+function renderNotes(){$('notesList').innerHTML=db.notes.map((x,i)=>`<div class="card" style="margin-top:10px"><input value="${esc(x.title)}" onchange="db.notes[${i}].title=this.value;save()"><textarea onchange="db.notes[${i}].body=this.value;save()">${esc(x.body)}</textarea><button type="button" onclick="db.notes.splice(${i},1);save();renderNotes()">🗑️</button></div>`).join('')||'<div class="empty">No notes.</div>'}
+function addTask(){let n=prompt('Task name');if(n){db.tasks.push({name:n,done:false});save();renderAll()}}
+function renderTasks(){$('taskList').innerHTML=db.tasks.map((x,i)=>`<div class="row"><label><input type="checkbox" ${x.done?'checked':''} onchange="db.tasks[${i}].done=this.checked;save();renderAll()"> ${esc(x.name)}</label><button type="button" onclick="db.tasks.splice(${i},1);save();renderAll()">🗑️</button></div>`).join('')||'<div class="empty">No tasks.</div>'}
+function addEvent(){formModal('Add Date',[['Name','text'],['Date','date']],v=>{db.events.push({name:v[0],date:v[1]});save();closeModal();renderAll()})}
+function renderEvents(){$('eventList').innerHTML=db.events.map((x,i)=>`<div class="row">📅 ${esc(x.date)} — ${esc(x.name)} <button type="button" onclick="db.events.splice(${i},1);save();renderAll()">🗑️</button></div>`).join('')||'<div class="empty">No dates.</div>'}
+function addBrain(){let v=$('brainText').value.trim();if(v){db.brain.unshift(v);$('brainText').value='';save();renderBrain()}}
+function renderBrain(){$('brainList').innerHTML=db.brain.map((x,i)=>`<div class="row">💡 ${esc(x)} <button type="button" onclick="db.brain.splice(${i},1);save();renderBrain()">✕</button></div>`).join('')}
+function addBookmark(){formModal('Add Bookmark',[['Name','text'],['URL','url']],v=>{db.bookmarks.push({name:v[0],url:v[1]});save();closeModal();renderAll()})}
+function renderBookmarks(){$('bookmarkList').innerHTML=db.bookmarks.map((x,i)=>`<div class="row"><a href="${esc(x.url)}" target="_blank" style="color:#93c5fd">${esc(x.name)}</a><button type="button" onclick="db.bookmarks.splice(${i},1);save();renderAll()">🗑️</button></div>`).join('')||'<div class="empty">No bookmarks.</div>'}
+function addStudySet(){let name=prompt('Study set name');if(!name)return;db.studySets.push({name,cards:[]});save();renderStudy()}
+function renderStudy(){$('studyList').innerHTML=db.studySets.map((s,i)=>`<div class="card" style="margin-top:10px"><div class="row"><b>📚 ${esc(s.name)}</b><span>${s.cards.length} cards</span></div><div class="actions"><button type="button" class="primary" onclick="openStudy(${i})">Open Study Set</button><button type="button" onclick="db.studySets.splice(${i},1);save();renderStudy()">🗑️</button></div></div>`).join('')||'<div class="empty">No study sets yet.</div>'}
+function openStudy(i){
+  $('modal').style.display='';let s=db.studySets[i];$('modal').style.display='';$('modalTitle').textContent='📚 '+s.name;$('modalBody').innerHTML=`<button type="button" class="primary" onclick="addCard(${i})">＋ Add Flashcard</button><div id="cards">${s.cards.map((c,j)=>`<div class="card" style="margin-top:10px"><b>Front:</b> ${esc(c.front)}<br><b>Back:</b> ${esc(c.back)}<div class="actions"><button type="button" onclick="speakCard('${encodeURIComponent(c.front)}')">🔊</button><button type="button" onclick="db.studySets[${i}].cards.splice(${j},1);save();openStudy(${i})">🗑️</button></div></div>`).join('')}</div>`;$('modal').classList.add('open')}
+function addCard(i){formModal('Add Flashcard',[['Front / Question','textarea'],['Back / Answer','textarea']],v=>{db.studySets[i].cards.push({front:v[0],back:v[1]});save();closeModal();openStudy(i)})}
+function speakCard(t){let u=new SpeechSynthesisUtterance(decodeURIComponent(t));speechSynthesis.speak(u)}
+function addMusic(e){
+  let files=Array.from(e.target.files||[]);
+  if(!files.length)return;
+  let mp3s=files.filter(f=>{
+    let name=(f.name||'').toLowerCase();
+    return name.endsWith('.mp3') || f.type==='audio/mpeg';
+  });
+  if(mp3s.length!==files.length) toast('Only MP3 files can be added to the local music library');
+  if(!mp3s.length){e.target.value='';return;}
+  let remaining=mp3s.length;
+  mp3s.forEach(f=>{
+    let r=new FileReader();
+    r.onerror=()=>{
+      remaining--;
+      if(remaining===0){e.target.value='';renderMusic();toast('Some MP3 files could not be read');}
+    };
+    r.onload=()=>{
+      db.music.push({
+        name:f.name,title:f.name.replace(/\.[^/.]+$/,''),artist:'',album:'',genre:'',track:'',description:'',cover:'',
+        player:{bg:'#10131a',accent:'#8b5cf6',size:'Large',blur:true,lyrics:false,visualizer:false,text:''},
+        data:r.result,mime:'audio/mpeg'
+      });
+      remaining--;
+      if(remaining===0){
+        save();
+        if(db.music.length===1)db.musicSettings.current=0;
+        renderMusic();e.target.value='';
+        toast(mp3s.length+' MP3'+(mp3s.length===1?'':'s')+' added');
+      }
+    };
+    r.readAsDataURL(f);
+  });
+}
+function currentMusicIndex(){
+  if(!db.music.length)return -1;
+  let i=Number(db.musicSettings.current)||0;
+  if(i<0||i>=db.music.length)i=0;
+  db.musicSettings.current=i;
+  return i;
+}
+function musicRepeatLabel(){
+  return db.musicSettings.repeat==='one'?'🔂 Repeat one':
+         db.musicSettings.repeat==='all'?'🔁 Repeat all':'🔁 Repeat off';
+}
+function toggleMusicShuffle(){
+  db.musicSettings.shuffle=!db.musicSettings.shuffle;
+  save();renderMusic();
+  toast(db.musicSettings.shuffle?'Shuffle on':'Shuffle off');
+}
+function cycleMusicRepeat(){
+  let order=['off','all','one'],i=order.indexOf(db.musicSettings.repeat);
+  db.musicSettings.repeat=order[(i+1)%order.length];
+  save();renderMusic();toast(musicRepeatLabel());
+}
+function chooseNextMusicIndex(){
+  let cur=currentMusicIndex();if(cur<0)return -1;
+  if(db.music.length===1)return 0;
+  if(db.musicSettings.shuffle){
+    let next=Math.floor(Math.random()*db.music.length);
+    if(next===cur)next=(next+1)%db.music.length;
+    return next;
+  }
+  return (cur+1)%db.music.length;
+}
+function choosePreviousMusicIndex(){
+  let cur=currentMusicIndex();if(cur<0)return -1;
+  if(db.musicSettings.shuffle){
+    let next=Math.floor(Math.random()*db.music.length);
+    if(next===cur)next=(next+1)%db.music.length;
+    return next;
+  }
+  return (cur-1+db.music.length)%db.music.length;
+}
+function loadMusic(i,autoplay){
+  if(!db.music.length)return;
+  if(i<0||i>=db.music.length)i=0;
+  db.musicSettings.current=i;save();renderMusic();
+  let audio=$('localMusicPlayer');if(!audio)return;
+  audio.src=db.music[i].data;audio.load();
+  if(autoplay){let p=audio.play();if(p&&p.catch)p.catch(()=>toast('Tap Play to start this song'));}
+}
+function playMusicAt(i){loadMusic(i,true)}
+function toggleMusicPlayback(){
+  let i=currentMusicIndex();if(i<0)return;
+  let audio=$('localMusicPlayer');if(!audio)return;
+  if(!audio.src)audio.src=db.music[i].data;
+  if(audio.paused){let p=audio.play();if(p&&p.catch)p.catch(()=>toast('Tap Play again to start'));}else audio.pause();
+}
+function previousMusic(){loadMusic(choosePreviousMusicIndex(),true)}
+function nextMusic(){
+  if(db.musicSettings.repeat==='one'){
+    let audio=$('localMusicPlayer');if(audio){audio.currentTime=0;let p=audio.play();if(p&&p.catch)p.catch(()=>{});}
+    return;
+  }
+  loadMusic(chooseNextMusicIndex(),true);
+}
+function handleMusicEnded(){
+  if(!db.music.length)return;
+  if(db.musicSettings.repeat==='one'){
+    let audio=$('localMusicPlayer');if(audio){audio.currentTime=0;let p=audio.play();if(p&&p.catch)p.catch(()=>{});}
+    return;
+  }
+  if(db.musicSettings.repeat==='off'&&!db.musicSettings.shuffle&&currentMusicIndex()===db.music.length-1){renderMusic();return;}
+  loadMusic(chooseNextMusicIndex(),true);
+}
+function removeMusic(i){
+  if(i<0||i>=db.music.length)return;
+  let wasCurrent=i===currentMusicIndex();
+  db.music.splice(i,1);
+  if(!db.music.length){
+    db.musicSettings.current=0;
+    let a=$('localMusicPlayer');if(a){a.pause();a.removeAttribute('src');a.load();}
+  }else if(wasCurrent){
+    db.musicSettings.current=Math.min(i,db.music.length-1);
+  }else if(i<db.musicSettings.current)db.musicSettings.current--;
+  save();renderMusic();
+}
+function renderMusic(){
+  let i=currentMusicIndex(),m=i>=0?db.music[i]:null,player=$('musicPlayerCard');
+  if(player){
+    player.innerHTML=m?`<div class="card" style="margin-top:12px">
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="cover" style="width:84px;height:84px;flex:0 0 84px;${m.cover?'background-image:url('+m.cover+')':''}"><div><b>🎵</b></div></div>
+        <div style="min-width:0;flex:1"><b>${esc(m.title||m.name)}</b><div class="muted">${esc(m.artist||'Local MP3')}</div></div>
+      </div>
+      <audio id="localMusicPlayer" controls preload="metadata" src="${m.data}" style="width:100%;margin-top:12px"></audio>
+      <div class="actions" style="align-items:center">
+        <button type="button" onclick="previousMusic()">⏮️</button>
+        <button type="button" class="primary" onclick="toggleMusicPlayback()">▶️ / ⏸️</button>
+        <button type="button" onclick="nextMusic()">⏭️</button>
+        <button type="button" onclick="toggleMusicShuffle()">${db.musicSettings.shuffle?'🔀 Shuffle ON':'🔀 Shuffle'}</button>
+        <button type="button" onclick="cycleMusicRepeat()">${musicRepeatLabel()}</button>
+      </div>
+      <div class="muted">Mode: ${db.musicSettings.shuffle?'Shuffle':'In order'} · ${musicRepeatLabel().replace('🔁 ','').replace('🔂 ','')}</div>
+    </div>`:'';
+    if(m){
+      let a=$('localMusicPlayer');
+      a.onended=handleMusicEnded;
+    }
+  }
+  $('musicList').innerHTML=db.music.map((m,j)=>`<div class="card" style="margin-top:10px;${j===i?'border-color:var(--accent)':''}">
+    <div class="row"><span>🎵 <b>${esc(m.title||m.name)}</b>${j===i?' · Now playing':''}</span><span>
+      <button type="button" onclick="playMusicAt(${j})">▶️ Play</button>
+      <button type="button" onclick="musicEditor(${j})">✏️ Customize</button>
+      <button type="button" onclick="removeMusic(${j})">🗑️ Remove</button>
+    </span></div>
+    <div class="muted">${esc(m.artist||'Local MP3')}${m.album?' · '+esc(m.album):''}</div>
+  </div>`).join('')||'<div class="empty">No local MP3 music yet.</div>';
+}
+const FILE_DB_NAME='JillianOSFiles';
+function fileDB(){
+  return new Promise(function(resolve,reject){
+    let req=indexedDB.open(FILE_DB_NAME,1);
+    req.onupgradeneeded=function(){req.result.createObjectStore('blobs')};
+    req.onsuccess=function(){resolve(req.result)};
+    req.onerror=function(){reject(req.error)};
+  });
+}
+async function putFileBlob(key,blob){
+  let dbx=await fileDB();
+  return new Promise(function(resolve,reject){
+    let tx=dbx.transaction('blobs','readwrite');
+    tx.objectStore('blobs').put(blob,key);
+    tx.oncomplete=function(){dbx.close();resolve(true)};
+    tx.onerror=function(){dbx.close();reject(tx.error)};
+  });
+}
+async function getFileBlob(key){
+  let dbx=await fileDB();
+  return new Promise(function(resolve,reject){
+    let tx=dbx.transaction('blobs','readonly');
+    let req=tx.objectStore('blobs').get(key);
+    req.onsuccess=function(){dbx.close();resolve(req.result||null)};
+    req.onerror=function(){dbx.close();reject(req.error)};
+  });
+}
+async function deleteFileBlob(key){
+  if(!key)return;
+  try{
+    let dbx=await fileDB();
+    await new Promise(function(resolve,reject){
+      let tx=dbx.transaction('blobs','readwrite');
+      tx.objectStore('blobs').delete(key);
+      tx.oncomplete=resolve;tx.onerror=function(){reject(tx.error)};
+    });
+    dbx.close();
+  }catch(e){console.error(e)}
+}
+async function addFiles(e){
+  let files=Array.from(e.target.files||[]);
+  if(!files.length)return;
+  let added=0;
+  for(let f of files){
+    try{
+      let key='file_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+      await putFileBlob(key,f);
+      db.files.push({name:f.name,type:f.type||'application/octet-stream',size:f.size,blobKey:key});
+      added++;
+      save();
+      renderFiles();
+    }catch(err){
+      console.error('file import',err);
+      toast('Could not import '+f.name);
+    }
+  }
+  e.target.value='';
+  if(added)toast(added+' file'+(added===1?'':'s')+' added');
+}
+async function openFile(i){
+  let f=db.files[i];if(!f)return;
+  try{
+    if(f.blobKey){
+      let blob=await getFileBlob(f.blobKey);if(!blob){toast('File data is missing');return}
+      let url=URL.createObjectURL(blob);
+      let a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),60000);
+      return;
+    }
+    // Backward compatibility for older files stored as data URLs.
+    let a=document.createElement('a');a.href=f.data;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();
+  }catch(err){console.error(err);toast('Could not open that file')}
+}
+async function downloadFile(i){return openFile(i)}
+async function deleteFile(i){
+  let f=db.files[i];if(!f)return;
+  await deleteFileBlob(f.blobKey);
+  db.files.splice(i,1);save();renderFiles();toast('File removed');
+}
+function renderFiles(){
+  $('fileList').innerHTML=db.files.map((f,i)=>`<div class="row">📎 <span><b>${esc(f.name)}</b><span class="muted small">${f.type||'File'}${f.size?' · '+Math.round(f.size/1024)+' KB':''}</span></span><span><button type="button" onclick="openFile(${i})">Open</button><button type="button" onclick="deleteFile(${i})">🗑️</button></span></div>`).join('')||'<div class="empty">No files.</div>';
+}
+function closeModal(){
+  var m=document.getElementById('modal');
+  if(!m)return;
+  m.classList.remove('open');
+  m.style.display='';
+  var b=document.getElementById('modalBody'); if(b)b.innerHTML='';
+  var t=document.getElementById('modalTitle'); if(t)t.textContent='';
+  window.__modalSave=null;
+}
+window.closeModal=closeModal;
+
+function downloadFile(i){let f=db.files[i],a=document.createElement('a');a.href=f.data;a.download=f.name;a.click()}
+function formModal(title,fields,done){
+  var titleEl=document.getElementById('modalTitle');
+  var body=document.getElementById('modalBody');
+  var modal=document.getElementById('modal');
+  if(!titleEl||!body||!modal){toast('The editor could not open');return}
+  titleEl.textContent=title;
+  window.__modalSave=function(){
+    try{
+      var values=fields.map(function(_,i){
+        var el=document.getElementById('field'+i);
+        return el?el.value:'';
+      });
+      done(values);
+      return true;
+    }catch(e){
+      console.error('modal save action:',e);
+      toast('Could not save that item');
+      return false;
+    }
+  };
+  body.innerHTML=fields.map(function(f,i){
+    var tag=f[1]==='textarea'?'textarea':'input';
+    var type=f[1]!=='textarea'?' type="'+f[1]+'"':'';
+    var value=f[1]==='textarea'?esc(f[2]||''):'';
+    return '<label>'+esc(f[0])+'<'+tag+' id="field'+i+'"'+type+'>'+value+'</'+tag+'></label>';
+  }).join('')+'<div class="actions"><button type="button" class="primary" id="formSave">Save</button></div>';
+  fields.forEach(function(f,i){
+    if(f[1]!=='textarea' && f[2]!==undefined){
+      var el=document.getElementById('field'+i); if(el)el.value=f[2];
+    }
+  });
+  modal.style.display='flex';
+  modal.classList.add('open');
+}
+function quickAdd(){try{formModal('Quick Add',[['What is it?','text']],function(v){let x=v[0];if(x){db.brain.unshift(x);save();closeModal();renderAll()}})}catch(e){toast('Quick Add could not open');console.error(e)}}
+function saveQuick(){
+  try{
+    normalizeDB();
+    var el=$('quickText');
+    var x=el?el.value.trim():'';
+    if(!x){toast('Type something first');return}
+    db.brain.unshift(x);
+    if(save()){
+      if(el)el.value='';
+      renderAll();
+      openView('home');
+      toast('Saved to Brain Dump ✓');
+    }else{
+      db.brain.shift();
+      toast('Could not save — storage is unavailable');
+    }
+  }catch(e){
+    console.error('saveQuick:',e);
+    toast('Could not save that item');
+  }
+}
+function createSection(){formModal('Create New Section/App',[['Name','text'],['Icon','text','⭐']],v=>{let id='custom_'+Date.now();db.sections.push({id,name:v[0],icon:v[1]||'⭐',visible:true,cover:'',blocks:[]});save();createCustomDom(id);renderNav();closeModal();openView(id);})}
+function renderSettings(){$('sectionSettings').innerHTML=db.sections.map((s,i)=>`<div class="section-row"><span>${esc(s.icon)} ${esc(s.name)}</span><span><button type="button" onclick="renameSection(${i})">✏️</button><button type="button" onclick="toggleSection(${i})">👁️</button><button type="button" onclick="moveSection(${i},-1)">↑</button><button type="button" onclick="moveSection(${i},1)">↓</button><button type="button" onclick="deleteSection(${i})">🗑️</button></span></div>`).join('')}
+function renameSection(i){formModal('Rename Section',[['Name','text',db.sections[i].name],['Icon','text',db.sections[i].icon]],v=>{db.sections[i].name=v[0];db.sections[i].icon=v[1]||'⭐';save();closeModal();renderNav();renderAll()})}
+function toggleSection(i){if(db.sections[i].id==='home'){toast('Home stays visible');return}db.sections[i].visible=!db.sections[i].visible;save();renderNav();renderSettings()}
+function moveSection(i,d){let j=i+d;if(j<0||j>=db.sections.length)return;[db.sections[i],db.sections[j]]=[db.sections[j],db.sections[i]];save();renderNav();renderSettings()}
+function deleteSection(i){if(db.sections[i].id==='home'){toast('Home cannot be removed');return}if(confirm('Remove this section?')){let id=db.sections[i].id;db.sections.splice(i,1);let v=$(id);if(v)v.remove();save();renderNav();renderSettings()}}
+function customizeSection(id){
+  $('modal').style.display='';let s=db.sections.find(x=>x.id===id);$('modal').style.display='';$('modalTitle').textContent='⚙️ Customize '+s.name;$('modalBody').innerHTML=`<label>Section name<input id="csName" value="${esc(s.name)}"></label><label>Icon<input id="csIcon" value="${esc(s.icon)}"></label><button type="button" onclick="document.getElementById('csCover').click()">🖼️ Choose Cover Photo</button><input id="csCover" type="file" accept="image/*" style="display:none" onchange="setSectionCover(event,'${id}')"><p class="muted">Use your own photo as the cover/background.</p><button type="button" class="primary" onclick="saveCustomSection('${id}')">Save</button>`;$('modal').classList.add('open')}
+function saveCustomSection(id){let s=db.sections.find(x=>x.id===id);s.name=$('csName').value;s.icon=$('csIcon').value||'⭐';save();closeModal();renderNav();renderAll()}
+function setSectionCover(e,id){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{let s=db.sections.find(x=>x.id===id);s.cover=r.result;save();createCustomDom(id);openView(id);closeModal()};r.readAsDataURL(f)}
+function addCustomBlock(id){let s=db.sections.find(x=>x.id===id);s.blocks=s.blocks||[];formModal('Add Custom Block',[['Title','text'],['Content','textarea']],v=>{s.blocks.push({title:v[0],content:v[1]});save();closeModal();renderCustom(id)})}
+function renderCustom(id){let s=db.sections.find(x=>x.id===id);let c=$(id+'_content');if(!c)return;c.innerHTML=(s.blocks||[]).map((b,i)=>`<div class="card" style="margin-top:10px"><h3>${esc(b.title)}</h3><p>${esc(b.content)}</p><button type="button" onclick="s.blocks.splice(${i},1);save();renderCustom('${id}')">🗑️</button></div>`).join('')}
+function customizeAppearance(){formModal('Appearance',[['Accent color','color',db.appearance.accent]],v=>{db.appearance.accent=v[0];save();closeModal();renderAll()})}
+function applyAppearance(){document.documentElement.style.setProperty('--accent',db.appearance.accent||'#8b5cf6')}
+function exportData(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='jillian-os-backup.json';a.click()}
+document.addEventListener('click',function(e){
+  var d=e.target.closest('[data-discover-action]');
+  if(d){e.preventDefault();discoverAction(d.getAttribute('data-discover-action'));return;}
+});
+document.addEventListener('click',function(e){
+  var m=document.getElementById('modal');
+  if(m && e.target===m)closeModal();
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape')closeModal();
+});
+
+function importBackup(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);save();$('modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()});
+renderNav();renderAll();toast('Backup imported')}catch(_){toast('Invalid backup')}};r.readAsText(f)}
+function globalSearch(q){
+  q=(q||'').trim().toLowerCase();
+  if(!q){renderAll();return}
+  let out=[];
+  const add=(icon,name,view,extra)=>out.push({icon,name,view,extra:extra||''});
+  db.sections.forEach(s=>{if((s.name+' '+s.icon).toLowerCase().includes(q))add(s.icon,s.name,s.id,'Section')});
+  db.career.forEach(x=>{if(JSON.stringify(x).toLowerCase().includes(q))add('💼',x.name,'career',x.status||'')});
+  db.projects.forEach(x=>{if(JSON.stringify(x).toLowerCase().includes(q))add('🎨',x.name,'creative',x.stage||'')});
+  db.notes.forEach(x=>{if(JSON.stringify(x).toLowerCase().includes(q))add('📝',x.title,'notes','Note')});
+  db.tasks.forEach(x=>{if(JSON.stringify(x).toLowerCase().includes(q))add('✅',x.name,'tasks',x.done?'Done':'Open')});
+  db.events.forEach(x=>{if(JSON.stringify(x).toLowerCase().includes(q))add('📅',x.name,'calendar',x.date||'')});
+  db.brain.forEach(x=>{if(String(x).toLowerCase().includes(q))add('🧠',String(x).slice(0,80),'brain','Brain Dump')});
+  db.bookmarks.forEach(x=>{if(JSON.stringify(x).toLowerCase().includes(q))add('🔖',x.name,'bookmarks','Bookmark')});
+  db.studySets.forEach(x=>{if(JSON.stringify(x).toLowerCase().includes(q))add('📚',x.name,'study',x.cards.length+' cards');x.cards.forEach(c=>{if(JSON.stringify(c).toLowerCase().includes(q))add('🃏',c.front,'study','Flashcard')})});
+  db.music.forEach(x=>{if(JSON.stringify(x).toLowerCase().includes(q))add('🎵',x.title||x.name,'music',x.artist||'Local MP3')});
+  db.files.forEach(x=>{if(JSON.stringify(x).toLowerCase().includes(q))add('📎',x.name,'files',x.type||'File')});
+  openView('home');
+  let box=$('attention');
+  if(!box)return;
+  box.innerHTML=out.length
+    ? `<div class="muted small" style="margin-bottom:8px">${out.length} result${out.length===1?'':'s'} for “${esc(q)}”</div>`+
+      out.slice(0,30).map(x=>`<div class="row"><span>${x.icon} <b>${esc(x.name)}</b><span class="muted">${esc(x.extra)}</span></span><button type="button" onclick="openView('${x.view}')">Open</button></div>`).join('')
+    : '<div class="empty">No matches found anywhere in your dashboard.</div>';
+}
+
+
+
+
+
+function renderSectionSettings(){let el=$('sectionSettings');if(el)el.innerHTML=db.sections.map((s,i)=>`<div class="section-row"><span>${esc(s.icon)} ${esc(s.name)}</span><span><button type="button" onclick="renameSection(${i})">✏️</button><button type="button" onclick="toggleSection(${i})">${s.visible?'👁️':'🚫'}</button><button type="button" onclick="moveSection(${i},-1)">↑</button><button type="button" onclick="moveSection(${i},1)">↓</button><button type="button" onclick="deleteSection(${i})">🗑️</button></span></div>`).join('')}
+function renderTasks(){let el=$('taskList');if(el)el.innerHTML=db.tasks.map((x,i)=>`<div class="row"><label><input type="checkbox" ${x.done?'checked':''} onchange="db.tasks[${i}].done=this.checked;save();renderAll()"> ${esc(x.name)}</label><button type="button" onclick="db.tasks.splice(${i},1);save();renderAll()">🗑️</button></div>`).join('')||'<div class="empty">No tasks.</div>'}
+function renderEvents(){let el=$('eventList');if(el)el.innerHTML=db.events.map((x,i)=>`<div class="row">📅 ${esc(x.date)} — ${esc(x.name)}<button type="button" onclick="db.events.splice(${i},1);save();renderAll()">🗑️</button></div>`).join('')||'<div class="empty">No dates.</div>'}
+function renderDocs(){let el=$('docList');if(el)el.innerHTML=db.docs.map((x,i)=>`<div class="row">📄 <span><b>${esc(x.name)}</b><br>${esc(x.note)}</span><button type="button" onclick="db.docs.splice(${i},1);save();renderAll()">🗑️</button></div>`).join('')||'<div class="empty">No documents.</div>'}
+function renderNotes(){let el=$('notesList');if(el)el.innerHTML=db.notes.map((x,i)=>`<div class="card" style="margin-top:10px"><input value="${esc(x.title)}" onchange="db.notes[${i}].title=this.value;save()"><textarea onchange="db.notes[${i}].body=this.value;save()">${esc(x.body)}</textarea><button type="button" onclick="db.notes.splice(${i},1);save();renderNotes()">🗑️</button></div>`).join('')||'<div class="empty">No notes.</div>'}
+function renderBrain(){let el=$('brainList');if(el)el.innerHTML=db.brain.map((x,i)=>`<div class="row">💡 ${esc(x)}<button type="button" onclick="db.brain.splice(${i},1);save();renderBrain()">✕</button></div>`).join('')}
+
+function openDiscover(){openView('discover');renderDiscover()}
+function renderDiscover(){
+  const items=[
+    ['🎨','Customize Anything','Change names, icons, covers, backgrounds, colors, layouts and visibility.','customizeAppearance()'],
+    ['🧱','Build a Custom App','Create a blank section and add your own blocks.','createSection()'],
+    ['🃏','Flashcard Lab','Make study cards and use text-to-speech on the front of a card.','addStudySet()'],
+    ['🎵','Music Lab','Import your own audio, edit its metadata and design the Now Playing screen.','openMusicEditor()'],
+    ['🖼️','Photo Covers','Use your own photos as covers for projects and custom sections.','toast("Open a project or custom section → Customize")'],
+    ['📦','File Playground','Import local files and open/download them from the app.','openView("files")'],
+    ['🔎','Global Search','Search career items, projects, notes and brain-dump entries.','$("globalSearch").focus()'],
+    ['💾','Backup & Restore','Export your entire local dashboard and import it later.','exportData()'],
+    ['🧩','Rearrange Apps','Move sections up/down from Settings.','openView("settings")'],
+    ['👁️','Hide Apps','Hide anything you do not want on the navigation bar.','openView("settings")'],
+    ['🎯','Quick Capture','Dump an idea without deciding where it belongs yet.','quickAdd()'],
+    ['🧪','Feature Playground','This page is intentionally expandable — new tools can be added here later.','toast("More experiments coming as we build!")']
+  ];
+  $('discoverGrid').innerHTML=items.map((x,i)=>`<div class="appcard"><div style="font-size:28px">${x[0]}</div><h3>${esc(x[1])}</h3><p class="muted">${esc(x[2])}</p><button type="button" onclick="${x[3]}">Try it</button></div>`).join('');
+}
+document.addEventListener('click',function(e){
+  var saveButton=e.target.closest('#formSave');
+  if(saveButton){e.preventDefault();e.stopPropagation();if(window.__modalSave)window.__modalSave();return;}
+  var closeButton=e.target.closest('#modal .sheethead button');
+  if(closeButton){e.preventDefault();e.stopPropagation();closeModal();return;}
+  var modal=e.target.closest('#modal');
+  if(modal && e.target===modal){closeModal();}
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()});
+renderNav();renderAll();setInterval(updateDashboardHeader,60000);
+</script>
+
+<script>
+(function(){
+  window.addEventListener('error', function(e){
+    console.error(e.error||e.message);
+  });
+  document.addEventListener('click', function(e){
+    var b=e.target.closest('button');
+    if(b) b.type='button';
+  }, false);
+})();
+</script>
+
+</body></html>
